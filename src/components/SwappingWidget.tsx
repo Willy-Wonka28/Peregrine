@@ -1,6 +1,7 @@
 //importing libraries for setup coonnection
 import { Connection, LAMPORTS_PER_SOL, VersionedTransaction } from '@solana/web3.js';
 import { Buffer } from 'buffer';
+window.Buffer = Buffer;
 import fetch from 'cross-fetch'
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useEffect, useState } from 'react'
