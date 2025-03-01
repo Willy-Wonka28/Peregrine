@@ -1,9 +1,8 @@
 //importing libraries for setup coonnection
 import { Connection, LAMPORTS_PER_SOL, VersionedTransaction } from '@solana/web3.js';
-import fetch from 'cross-fetch';
-import bs58 from 'bs58';
+import fetch from 'cross-fetch'
 import { useWallet } from '@solana/wallet-adapter-react';
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 function SwappingWidget() {
 
@@ -12,7 +11,7 @@ function SwappingWidget() {
 
 
     //for now it's a one way swap from solana to usdc as such we would only need to get the state for the amount of solana the user is willing to swap
-    const[amount, setAmount] = useState(null)
+    const[amount, setAmount] = useState<number | null>(null)
 
     //this captures the state for the value of the token we intend to swap to
     const[value, setValue] = useState<number | null>(null)
@@ -25,8 +24,8 @@ function SwappingWidget() {
         const priceData = await priceResponse.json();
 
         console.log(`Price response displayed in fronted`)
-        const output = amount ? amount * priceData.data.So11111111111111111111111111111111111111112.price : null;
-        setValue(output) 
+        const output = amount ? amount * priceData.data.So11111111111111111111111111111111111111112.price : 0;
+        setValue(output ?? 0) 
       };
       
       useEffect(() => {
@@ -38,12 +37,13 @@ function SwappingWidget() {
 
             //RPC endpoint for solana cluster e.g mainnet, testnet or devnet
             const connection = new Connection('https://api.mainnet-beta.solana.com');
-
-            const quoteResponse = await (
-                await fetch(`https://quote-api.jup.ag/v6/quote?inputMint=So11111111111111111111111111111111111111112&outputMint=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v&amount=${amount*LAMPORTS_PER_SOL}&slippageBps=50`
-                )
-            ).json();
-            console.log({ quoteResponse })
+            if (amount !== null){
+                const quoteResponse = await (
+                    await fetch(`https://quote-api.jup.ag/v6/quote?inputMint=So11111111111111111111111111111111111111112&outputMint=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v&amount=${amount*LAMPORTS_PER_SOL}&slippageBps=50`
+                    )
+                ).json();
+                console.log({ quoteResponse })
+            
 
             if (wallet.publicKey){
                 //get the serialized transactions to perform the swap
@@ -55,7 +55,7 @@ function SwappingWidget() {
                     },
                     body: JSON.stringify({
                         // quoteResponse from /quote api
-                        quoteResponse,
+                        quoteResponse: quoteResponse ?? {},
                         // user public key to be used for the swap
                         userPublicKey: wallet.publicKey.toString(),
                         // auto wrap and unwrap SOL. default is true
@@ -71,6 +71,11 @@ function SwappingWidget() {
             const transaction = VersionedTransaction.deserialize(swapTransactionBuf);
             console.log(transaction);
 
+            if (!wallet.signTransaction) {
+                console.error("Wallet is not connected or does not support signing transactions.");
+                return;
+            }            
+
             // sign the transaction
             const signedTransaction = await wallet?.signTransaction(transaction);
 
@@ -83,7 +88,7 @@ function SwappingWidget() {
             const latestBlockHash = await connection.getLatestBlockhash();
 
             // Execute the transaction
-            const rawTransaction = transaction.serialize()
+            const rawTransaction = transaction.serialize();
             const txid = await connection.sendRawTransaction(rawTransaction, {
             skipPreflight: true,
             maxRetries: 2
@@ -98,7 +103,7 @@ function SwappingWidget() {
                 console.warn("Your wallet might not be connected")
             }
 
-
+        }
            
     }
 
@@ -112,7 +117,7 @@ function SwappingWidget() {
                 <input
                 type="number"
                 placeholder="0"
-                value={amount}
+                value={amount ?? 0}
                 onChange={(e) => setAmount(parseFloat(e.target.value))}
                 className="bg-transparent text-white text-xl w-full outline-none"
                 />
@@ -133,7 +138,7 @@ function SwappingWidget() {
                 <input
                 type="number"
                 placeholder="0"
-                value={value !== null ? parseFloat(value).toFixed(3) : 0}
+                value={value !== null ? value?.toFixed(3).toString() : "0"}
                 className="cursor-pointer bg-transparent text-white text-xl w-full outline-none"
                 />
                 <span className="text-white font-bold flex items-center gap-2 mx-3">
